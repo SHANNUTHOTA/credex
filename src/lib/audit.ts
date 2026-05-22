@@ -220,41 +220,38 @@ function auditChatGPT(monthlySpend: number, seats: number): AuditResult {
 }
 
 function auditAnthropicApi(monthlySpend: number, inputTokens: number, outputTokens: number): AuditResult {
+    const opusCost = (inputTokens * ANTHROPIC_API_PRICING.opus.input) + (outputTokens * ANTHROPIC_API_PRICING.opus.output);
     const sonnetCost = (inputTokens * ANTHROPIC_API_PRICING.sonnet.input) + (outputTokens * ANTHROPIC_API_PRICING.sonnet.output);
     const haikuCost = (inputTokens * ANTHROPIC_API_PRICING.haiku.input) + (outputTokens * ANTHROPIC_API_PRICING.haiku.output);
 
+    let maxSavings = 0;
+    let recommendedAction = "No savings found";
+    let reason = "Your spending seems optimal for your usage.";
+
     if (monthlySpend > sonnetCost) {
         const savings = monthlySpend - sonnetCost;
-        if (savings > 0) {
-            return {
-                tool: "Anthropic API",
-                currentSpend: monthlySpend,
-                recommendedAction: "Switch to the Sonnet model",
-                savings,
-                reason: "Based on your usage, the Sonnet model can provide a good balance of performance and cost.",
-            };
+        if (savings > maxSavings) {
+            maxSavings = savings;
+            recommendedAction = "Switch to the Sonnet model";
+            reason = "Based on your usage, the Sonnet model can provide a good balance of performance and cost.";
         }
     }
     
     if (monthlySpend > haikuCost) {
         const savings = monthlySpend - haikuCost;
-        if (savings > 0) {
-            return {
-                tool: "Anthropic API",
-                currentSpend: monthlySpend,
-                recommendedAction: "Switch to the Haiku model",
-                savings,
-                reason: "For less complex tasks, the Haiku model can provide significant savings.",
-            };
+        if (savings > maxSavings) {
+            maxSavings = savings;
+            recommendedAction = "Switch to the Haiku model";
+            reason = "For less complex tasks, the Haiku model can provide significant savings.";
         }
     }
 
     return {
         tool: "Anthropic API",
         currentSpend: monthlySpend,
-        recommendedAction: "No savings found",
-        savings: 0,
-        reason: "Your spending seems optimal for your usage.",
+        recommendedAction,
+        savings: maxSavings,
+        reason,
     };
 }
 
@@ -262,38 +259,34 @@ function auditOpenaiApi(monthlySpend: number, inputTokens: number, outputTokens:
     const gpt4oCost = (inputTokens * OPENAI_API_PRICING["gpt-4o"].input) + (outputTokens * OPENAI_API_PRICING["gpt-4o"].output);
     const gpt35TurboCost = (inputTokens * OPENAI_API_PRICING["gpt-3.5-turbo"].input) + (outputTokens * OPENAI_API_PRICING["gpt-3.5-turbo"].output);
 
+    let maxSavings = 0;
+    let recommendedAction = "No savings found";
+    let reason = "Your spending seems optimal for your usage.";
+
     if (monthlySpend > gpt4oCost) {
         const savings = monthlySpend - gpt4oCost;
-        if (savings > 0) {
-            return {
-                tool: "OpenAI API",
-                currentSpend: monthlySpend,
-                recommendedAction: "Switch to the GPT-4o model",
-                savings,
-                reason: "Based on your usage, the GPT-4o model can provide a good balance of performance and cost.",
-            };
+        if (savings > maxSavings) {
+            maxSavings = savings;
+            recommendedAction = "Switch to the GPT-4o model";
+            reason = "Based on your usage, the GPT-4o model can provide a good balance of performance and cost.";
         }
     }
 
     if (monthlySpend > gpt35TurboCost) {
         const savings = monthlySpend - gpt35TurboCost;
-        if (savings > 0) {
-            return {
-                tool: "OpenAI API",
-                currentSpend: monthlySpend,
-                recommendedAction: "Switch to the GPT-3.5 Turbo model",
-                savings,
-                reason: "For less complex tasks, the GPT-3.5 Turbo model can provide significant savings.",
-            };
+        if (savings > maxSavings) {
+            maxSavings = savings;
+            recommendedAction = "Switch to the GPT-3.5 Turbo model";
+            reason = "For less complex tasks, the GPT-3.5 Turbo model can provide significant savings.";
         }
     }
 
     return {
         tool: "OpenAI API",
         currentSpend: monthlySpend,
-        recommendedAction: "No savings found",
-        savings: 0,
-        reason: "Your spending seems optimal for your usage.",
+        recommendedAction,
+        savings: maxSavings,
+        reason,
     };
 }
 
@@ -301,38 +294,34 @@ function auditGeminiApi(monthlySpend: number, inputTokens: number, outputTokens:
     const gemini15Pro128kCost = (inputTokens * GEMINI_API_PRICING["gemini-1.5-pro-128k"].input) + (outputTokens * GEMINI_API_PRICING["gemini-1.5-pro-128k"].output);
     const gemini15Flash128kCost = (inputTokens * GEMINI_API_PRICING["gemini-1.5-flash-128k"].input) + (outputTokens * GEMINI_API_PRICING["gemini-1.5-flash-128k"].output);
 
+    let maxSavings = 0;
+    let recommendedAction = "No savings found";
+    let reason = "Your spending seems optimal for your usage.";
+
     if (monthlySpend > gemini15Pro128kCost) {
         const savings = monthlySpend - gemini15Pro128kCost;
-        if (savings > 0) {
-            return {
-                tool: "Gemini API",
-                currentSpend: monthlySpend,
-                recommendedAction: "Switch to Gemini 1.5 Pro (128K context)",
-                savings,
-                reason: "Based on your usage, Gemini 1.5 Pro with 128K context can provide a good balance of performance and cost.",
-            };
+        if (savings > maxSavings) {
+            maxSavings = savings;
+            recommendedAction = "Switch to Gemini 1.5 Pro (128K context)";
+            reason = "Based on your usage, Gemini 1.5 Pro with 128K context can provide a good balance of performance and cost.";
         }
     }
 
     if (monthlySpend > gemini15Flash128kCost) {
         const savings = monthlySpend - gemini15Flash128kCost;
-        if (savings > 0) {
-            return {
-                tool: "Gemini API",
-                currentSpend: monthlySpend,
-                recommendedAction: "Switch to Gemini 1.5 Flash (128K context)",
-                savings,
-                reason: "For less complex tasks, Gemini 1.5 Flash with 128K context can provide significant savings.",
-            };
+        if (savings > maxSavings) {
+            maxSavings = savings;
+            recommendedAction = "Switch to Gemini 1.5 Flash (128K context)";
+            reason = "For less complex tasks, Gemini 1.5 Flash with 128K context can provide significant savings.";
         }
     }
 
     return {
         tool: "Gemini API",
         currentSpend: monthlySpend,
-        recommendedAction: "No savings found",
-        savings: 0,
-        reason: "Your spending seems optimal for your usage.",
+        recommendedAction,
+        savings: maxSavings,
+        reason,
     };
 }
 
