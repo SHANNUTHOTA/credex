@@ -25,6 +25,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
 import { runAudit, AuditResult } from "@/lib/audit";
+import Link from "next/link";
 
 const formSchema = z.object({
   tool: z.string(),
@@ -34,11 +35,20 @@ const formSchema = z.object({
   outputTokens: z.coerce.number().optional(),
 });
 
+const leadFormSchema = z.object({
+  email: z.string().email(),
+  companyName: z.string().optional(),
+  role: z.string().optional(),
+  teamSize: z.coerce.number().optional(),
+});
+
 const API_TOOLS = ["anthropic-api", "openai-api", "gemini-api"];
 
 export function SpendForm() {
   const [selectedTool, setSelectedTool] = useState<string>("");
   const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
+  const [auditId, setAuditId] = useState<string | null>(null);
+  const [shareableUrl, setShareableUrl] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -48,7 +58,11 @@ export function SpendForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  const leadForm = useForm<z.infer<typeof leadFormSchema>>({
+    resolver: zodResolver(leadFormSchema),
+  });
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     const result = runAudit(
       values.tool,
       values.monthlySpend,
@@ -57,6 +71,44 @@ export function SpendForm() {
       values.outputTokens
     );
     setAuditResult(result);
+
+    // Save audit result to Supabase
+    const response = await fetch("/api/audit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(result),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      setAuditId(data.id);
+      setShareableUrl(`${window.location.origin}/audit/${data.id}`);
+    } else {
+      console.error("Failed to save audit result:", data.error);
+    }
+  }
+
+  async function onLeadSubmit(values: z.infer<typeof leadFormSchema>) {
+    if (!auditId) return;
+
+    const response = await fetch("/api/lead", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...values, auditResultId: auditId }),
+    });
+
+    if (response.ok) {
+      alert("Lead saved successfully!");
+      leadForm.reset();
+    } else {
+      const data = await response.json();
+      console.error("Failed to save lead:", data.error);
+      alert("Failed to save lead.");
+    }
   }
 
   const isApiTool = API_TOOLS.includes(selectedTool);
@@ -183,6 +235,82 @@ export function SpendForm() {
             <p>
               **Reason:** {auditResult.reason}
             </p>
+
+            {shareableUrl && (
+              <div className="space-y-2">
+                <p>
+                  **Shareable URL:**{" "}
+                  <Link href={shareableUrl} className="text-blue-500 underline">
+                    {shareableUrl}
+                  </Link>
+                </p>
+              </div>
+            )}
+
+            <Card className="mt-8">
+              <CardHeader>
+                <CardTitle>Capture Your Lead</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Form {...leadForm}>
+                  <form onSubmit={leadForm.handleSubmit(onLeadSubmit)} className="space-y-4">
+                    <FormField
+                      control={leadForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="your@email.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={leadForm.control}
+                      name="companyName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Company Name (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your Company" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={leadForm.control}
+                      name="role"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Role (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your Role" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={leadForm.control}
+                      name="teamSize"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Team Size (Optional)</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="e.g. 10" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit">Save Lead</Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
           </CardContent>
         </Card>
       )}
