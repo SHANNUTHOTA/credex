@@ -23,32 +23,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
 
 const formSchema = z.object({
   tool: z.string(),
-  plan: z.string(),
   monthlySpend: z.coerce.number(),
-  seats: z.coerce.number(),
-  teamSize: z.coerce.number(),
-  useCase: z.string(),
+  seats: z.coerce.number().optional(),
+  inputTokens: z.coerce.number().optional(),
+  outputTokens: z.coerce.number().optional(),
 });
 
+const API_TOOLS = ["anthropic-api", "openai-api", "gemini-api"];
+
 export function SpendForm() {
+  const [selectedTool, setSelectedTool] = useState<string>("");
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       tool: "",
-      plan: "",
       monthlySpend: 0,
-      seats: 0,
-      teamSize: 0,
-      useCase: "",
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     console.log(values);
   }
+
+  const isApiTool = API_TOOLS.includes(selectedTool);
 
   return (
     <Card className="w-[600px]">
@@ -64,7 +65,13 @@ export function SpendForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tool</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setSelectedTool(value);
+                    }}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a tool" />
@@ -77,7 +84,7 @@ export function SpendForm() {
                       <SelectItem value="chatgpt">ChatGPT</SelectItem>
                       <SelectItem value="anthropic-api">Anthropic API</SelectItem>
                       <SelectItem value="openai-api">OpenAI API</SelectItem>
-                      <SelectItem value="gemini">Gemini</SelectItem>
+                      <SelectItem value="gemini-api">Gemini API</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -97,19 +104,50 @@ export function SpendForm() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="seats"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Number of Seats</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="e.g. 5" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {isApiTool ? (
+              <>
+                <FormField
+                  control={form.control}
+                  name="inputTokens"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Monthly Input Tokens (in millions)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g. 100" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="outputTokens"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Monthly Output Tokens (in millions)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g. 100" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            ) : (
+              <FormField
+                control={form.control}
+                name="seats"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Number of Seats</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="e.g. 5" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <Button type="submit">Audit My Spend</Button>
           </form>
         </Form>
