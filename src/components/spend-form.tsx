@@ -40,6 +40,7 @@ const leadFormSchema = z.object({
   companyName: z.string().optional(),
   role: z.string().optional(),
   teamSize: z.coerce.number().optional(),
+  honeypot: z.string().optional(), // Honeypot field
 });
 
 const API_TOOLS = ["anthropic-api", "openai-api", "gemini-api"];
@@ -92,6 +93,13 @@ export function SpendForm() {
 
   async function onLeadSubmit(values: z.infer<typeof leadFormSchema>) {
     if (!auditId) return;
+
+    // Honeypot check
+    if (values.honeypot) {
+      console.log("Honeypot triggered. Ignoring submission.");
+      leadForm.reset();
+      return;
+    }
 
     const response = await fetch("/api/lead", {
       method: "POST",
@@ -324,6 +332,19 @@ export function SpendForm() {
                           <FormLabel>Team Size (Optional)</FormLabel>
                           <FormControl>
                             <Input type="number" placeholder="e.g. 10" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={leadForm.control}
+                      name="honeypot"
+                      render={({ field }) => (
+                        <FormItem className="sr-only"> {/* sr-only hides the field visually */}
+                          <FormLabel>Leave this field empty</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

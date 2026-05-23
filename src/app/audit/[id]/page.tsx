@@ -1,9 +1,42 @@
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Metadata } from 'next';
 
 interface AuditPageProps {
   params: {
     id: string;
+  };
+}
+
+export async function generateMetadata({ params }: AuditPageProps): Promise<Metadata> {
+  const { id } = params;
+
+  const { data } = await supabase
+    .from('audit_results')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (!data) {
+    return {
+      title: "AI Spend Audit Report Not Found",
+      description: "The AI Spend Audit report you are looking for does not exist.",
+    };
+  }
+
+  const title = `AI Spend Audit Report for ${data.tool}`;
+  const description = `Your AI Spend Audit Report: ${data.recommended_action}. Potential Savings: ${data.savings.toFixed(2)}.`;
+  const url = `${process.env.NEXT_PUBLIC_BASE_URL}/audit/${id}`; // Assuming NEXT_PUBLIC_BASE_URL is set
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+    },
   };
 }
 
@@ -39,7 +72,7 @@ export default async function AuditPage({ params }: AuditPageProps) {
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
       <Card className="w-[600px]">
         <CardHeader>
-          <CardTitle>Audit Result for {data.tool}</CardTitle>
+          <CardTitle>AI Spend Audit Result for {data.tool}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p>
