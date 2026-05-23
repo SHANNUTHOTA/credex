@@ -104,6 +104,29 @@ export function SpendForm() {
     if (response.ok) {
       alert("Lead saved successfully!");
       leadForm.reset();
+
+      // Send transactional email
+      await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: values.email,
+          subject: "Your AI Spend Audit Report",
+          html: `
+            <h1>Your AI Spend Audit Report</h1>
+            <p>Thank you for using our AI Spend Audit tool. Here is your report:</p>
+            <p>Tool: ${auditResult?.tool}</p>
+            <p>Current Spend: ${auditResult?.currentSpend.toFixed(2)}</p>
+            <p>Recommended Action: ${auditResult?.recommendedAction}</p>
+            <p>Potential Savings: ${auditResult?.savings.toFixed(2)}</p>
+            <p>Reason: ${auditResult?.reason}</p>
+            <p>View your full report here: <a href="${shareableUrl}">${shareableUrl}</a></p>
+            <p>Credex will reach out for high-savings cases.</p>
+          `,
+        }),
+      });
     } else {
       const data = await response.json();
       console.error("Failed to save lead:", data.error);
