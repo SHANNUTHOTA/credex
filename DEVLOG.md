@@ -44,3 +44,34 @@
 - Set up Supabase project and database schema.
 - Implement Next.js API routes for saving audit results and capturing leads.
 - Implement logic for generating unique shareable URLs.
+
+## Day 3 - 2026-05-21
+
+**Hours worked:** 3
+
+**What I did:**
+- Installed Supabase client library.
+- Created `src/lib/supabase.ts` for Supabase client initialization.
+- Created `.env.local` for Supabase environment variables.
+- Implemented API route `src/app/api/audit/route.ts` to save audit results to Supabase.
+- Implemented API route `src/app/api/lead/route.ts` to capture leads to Supabase.
+- Updated `SpendForm` to interact with audit and lead API routes, generate shareable URLs.
+- Created dynamic page `src/app/audit/[id]/page.tsx` to display audit results from Supabase.
+- Implemented transactional email sending using Resend.
+- Implemented a simple honeypot for abuse protection in the lead capture form.
+- Added Open Graph tags to the shareable audit page.
+
+**What I learned:**
+- How to integrate Supabase with a Next.js application for data storage.
+- How to implement API routes in Next.js.
+- How to send transactional emails using Resend.
+- Basic abuse protection techniques like honeypots.
+- How to add Open Graph tags for better social media sharing.
+
+**Blockers / what I'm stuck on:**
+- None so far.
+
+**Plan for tomorrow:**
+- Implement AI-generated personalized summary.
+- Complete all required markdown files (`README.md`, `ARCHITECTURE.md`, `REFLECTION.md`, `GTM.md`, `ECONOMICS.md`, `USER_INTERVIEWS.md`, `LANDING_COPY.md`, `METRICS.md`).
+- Review all deliverables and ensure all requirements are met.

@@ -87,6 +87,14 @@ export default async function AuditPage({ params }: AuditPageProps) {
           <p>
             **Reason:** {data.reason}
           </p>
+
+          <h2 className="text-xl font-semibold mt-8">AI-Generated Summary</h2>
+          <p>
+            Based on your current AI tool spending, our audit suggests potential optimizations.
+            By considering alternative plans or models, you could significantly reduce your monthly and annual costs.
+            Credex specializes in helping companies like yours capture these savings and optimize their AI infrastructure spend.
+            We recommend reviewing your usage patterns and exploring the recommended actions to maximize your savings.
+          </p>
         </CardContent>
       </Card>
     </main>
