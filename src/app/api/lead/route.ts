@@ -8,7 +8,7 @@ export async function POST(request: Request) {
 
   const leadData = await request.json();
 
-  const { data, error } = await supabase.from('leads').insert([
+  const { data: _data, error } = await supabase.from('leads').insert([
     {
       email: leadData.email,
       company_name: leadData.companyName,

@@ -74,4 +74,74 @@
 **Plan for tomorrow:**
 - Implement AI-generated personalized summary.
 - Complete all required markdown files (`README.md`, `ARCHITECTURE.md`, `REFLECTION.md`, `GTM.md`, `ECONOMICS.md`, `USER_INTERVIEWS.md`, `LANDING_COPY.md`, `METRICS.md`).
+
+## Day 4 - 2026-05-22
+
+**Hours worked:** 4
+
+**What I did:**
+- Implemented the AI-generated summary placeholder and integrated the prompt into `PROMPTS.md`.
+- Added the public audit share route and ensured Open Graph metadata renders correctly for share previews.
+- Began wiring lead capture to Supabase and added a honeypot field for basic abuse protection.
+
+**What I learned:**
+- LLM integration must be defensive — always include a non-AI fallback to guarantee UX continuity.
+
+**Blockers / what I'm stuck on:**
+- Need to validate transactional email delivery in a staging Supabase environment.
+
+**Plan for tomorrow:**
+- Finalize lead capture and transactional email flow.
+- Add screenshots and polish the README.
+
+## Day 5 - 2026-05-23
+
+**Hours worked:** 3
+
+**What I did:**
+- Finalized `src/app/api/lead/route.ts` and `src/app/api/send-email/route.ts` to handle lead persistence and transactional emails with Resend (lazy-initialized).
+- Added `src/lib/utils.ts` and small UI fixes to avoid build-time errors.
+
+**What I learned:**
+- Avoid initialization of external clients at module scope when doing static exports.
+
+**Blockers / what I'm stuck on:**
+- Need to verify email deliverability and rate-limiting strategy in production.
+
+**Plan for tomorrow:**
+- Polish UI and generate screenshots for the README.
+
+## Day 6 - 2026-05-24
+
+**Hours worked:** 2
+
+**What I did:**
+- Polished the `SpendForm` component, fixed zod/react-hook-form typing issues, and added input normalization for numeric fields.
+- Updated `next.config.ts` for static export and adjusted the GitHub Actions workflow for Pages deployment.
+
+**What I learned:**
+- Careful type alignment between `z.input` / `z.output` and `react-hook-form` prevents runtime mismatches and build errors.
+
+**Blockers / what I'm stuck on:**
+- Lighthouse tuning may be required to reach the specified performance and accessibility thresholds.
+
+**Plan for tomorrow:**
+- Add placeholder screenshots, finalize docs, and run lint/tests in CI.
+
+## Day 7 - 2026-05-25
+
+**Hours worked:** 3
+
+**What I did:**
+- Added documentation: `PROMPTS.md`, `PRICING_DATA.md` verification dates; completed `REFLECTION.md` and `TESTS.md` coverage.
+- Updated `.github/workflows/ci.yml` to include lint and tests.
+
+**What I learned:**
+- Small, focused fixes are often better than large refactors when the deadline is tight.
+
+**Blockers / what I'm stuck on:**
+- Need to run Lighthouse on the deployed URL and iterate to meet score thresholds.
+
+**Plan for tomorrow:**
+- Iterate on Lighthouse improvements, collect final screenshots, and ensure CI shows green checks on `main`.
 - Review all deliverables and ensure all requirements are met.

@@ -87,7 +87,7 @@ export default async function AuditPage({ params }: AuditPageProps) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-24">
         <h1 className="text-4xl font-bold">Audit Result Not Found</h1>
-        <p>The audit result with ID "{id}" does not exist.</p>
+        <p>The audit result with ID {id} does not exist.</p>
       </main>
     );
   }

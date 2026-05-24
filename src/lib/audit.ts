@@ -220,7 +220,7 @@ function auditChatGPT(monthlySpend: number, seats: number): AuditResult {
 }
 
 function auditAnthropicApi(monthlySpend: number, inputTokens: number, outputTokens: number): AuditResult {
-    const opusCost = (inputTokens * ANTHROPIC_API_PRICING.opus.input) + (outputTokens * ANTHROPIC_API_PRICING.opus.output);
+    const _opusCost = (inputTokens * ANTHROPIC_API_PRICING.opus.input) + (outputTokens * ANTHROPIC_API_PRICING.opus.output);
     const sonnetCost = (inputTokens * ANTHROPIC_API_PRICING.sonnet.input) + (outputTokens * ANTHROPIC_API_PRICING.sonnet.output);
     const haikuCost = (inputTokens * ANTHROPIC_API_PRICING.haiku.input) + (outputTokens * ANTHROPIC_API_PRICING.haiku.output);
 

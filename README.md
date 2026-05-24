@@ -45,7 +45,38 @@ _Coming soon..._
 
 ## Decisions
 
-_Coming soon..._
+1. Trade-off: Static export to GitHub Pages vs Vercel serverless API
+    - Chosen: GitHub Pages (static export) to satisfy user request and simplify deployment.
+    - Why: Fast, free hosting with predictable asset delivery.
+    - Cost: Limits server-side API functionality on Pages; requires external backend for Supabase/Resend in production.
+
+2. Trade-off: Client-side audit engine vs server-side
+    - Chosen: Client-first audit calculation with optional server persistence.
+    - Why: Immediate UX (no login), simpler static deployment, and easier sharing via unique URLs.
+    - Cost: Audit logic is visible in client bundle; sensitive operations (lead capture) still use Supabase server.
+
+3. Trade-off: Use of LLM for summaries vs deterministic templated summaries
+    - Chosen: Use LLM for a personalized paragraph with a robust templated fallback.
+    - Why: LLM adds polish and conversion lift; fallback ensures reliability.
+    - Cost: LLM adds latency and cost; prompts and fallbacks documented in `PROMPTS.md`.
+
+4. Trade-off: Minimal UI polish vs time for perfect design
+    - Chosen: Prioritize clarity and functionality over heavy design work given the deadline.
+    - Why: The audit results page is the key viral asset; clarity and defensible logic are higher priority.
+    - Cost: Visual polish can be iterated post-submission.
+
+5. Trade-off: Build-time client initialization vs runtime lazy init
+    - Chosen: Lazy-initialize third-party clients (Resend) inside API handlers.
+    - Why: Prevents build-time failures in CI and on static export builds when secrets are absent.
+    - Cost: Slightly more code complexity in API handlers.
+
+### Screenshots
+
+Below are three placeholder screenshots of the app UI. Replace these with real screenshots or a 30-second recording link before final submission.
+
+- ![Screenshot 1](/public/screenshots/screenshot-1.svg)
+- ![Screenshot 2](/public/screenshots/screenshot-2.svg)
+- ![Screenshot 3](/public/screenshots/screenshot-3.svg)
 
 ## Deployed URL
 
