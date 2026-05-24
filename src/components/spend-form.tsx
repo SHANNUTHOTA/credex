@@ -87,21 +87,69 @@ export function SpendForm() {
     );
     setAuditResult(result);
 
-    // Save audit result to Supabase
-    const response = await fetch("/api/audit", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(result),
-    });
+    // Save audit result: try local API first, then fall back to client-side Supabase, then local download
+    try {
+      const response = await fetch("/api/audit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(result),
+      });
 
-    const data = await response.json();
-    if (response.ok) {
-      setAuditId(data.id);
-      setShareableUrl(`${window.location.origin}/audit/${data.id}`);
-    } else {
-      console.error("Failed to save audit result:", data.error);
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (err) {
+        console.warn("/api/audit returned non-JSON response", err);
+      }
+
+      if (response.ok && data && data.id) {
+        setAuditId(data.id);
+        setShareableUrl(`${window.location.origin}/audit/${data.id}`);
+        return;
+      }
+
+      // If the API route is not available (e.g. static host returns 405) or returned invalid JSON,
+      // attempt to save directly using client-side Supabase (requires NEXT_PUBLIC_* env vars).
+      const mod = await import("@/lib/supabase");
+      const client = mod.supabase;
+      if (client) {
+        const insert = {
+          tool: result.tool,
+          current_spend: result.currentSpend,
+          recommended_action: result.recommendedAction,
+          savings: result.savings,
+          reason: result.reason,
+        } as any;
+        const { data: inserted, error } = await client.from("audit_results").insert([insert]).select().single();
+        if (!error && inserted) {
+          const id = inserted.id ?? (inserted[0] && inserted[0].id);
+          setAuditId(id);
+          setShareableUrl(`${window.location.origin}/audit/${id}`);
+          return;
+        }
+        console.error("Supabase insert failed:", error);
+      }
+    } catch (err) {
+      console.warn("Saving audit via /api/audit failed:", err);
+    }
+
+    // Final fallback: offer the audit as a downloadable JSON file (works on static hosts)
+    try {
+      const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "audit.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      alert("Audit saved locally as audit.json. To store it online, deploy the backend or provide NEXT_PUBLIC_SUPABASE_* env vars.");
+    } catch (err) {
+      console.error("Final fallback failed:", err);
+      alert("Unable to save the audit result. Please try again later.");
     }
   }
 
