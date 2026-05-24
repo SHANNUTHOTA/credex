@@ -8,7 +8,22 @@ interface AuditPageProps {
   };
 }
 
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+  // GitHub Pages uses static export; audit IDs are generated dynamically at runtime.
+  // Provide a placeholder path so static export can pre-render this dynamic segment.
+  return [{ id: "sample" }];
+}
+
 export async function generateMetadata({ params }: AuditPageProps): Promise<Metadata> {
+  if (!supabase) {
+    return {
+      title: "AI Spend Audit",
+      description: "Backend is not configured for this deployment.",
+    };
+  }
+
   const { id } = params;
 
   const { data } = await supabase
@@ -41,6 +56,15 @@ export async function generateMetadata({ params }: AuditPageProps): Promise<Meta
 }
 
 export default async function AuditPage({ params }: AuditPageProps) {
+  if (!supabase) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center p-24">
+        <h1 className="text-4xl font-bold">Backend Unavailable</h1>
+        <p>This deployment does not include database-backed audit links.</p>
+      </main>
+    );
+  }
+
   const { id } = params;
 
   const { data, error } = await supabase

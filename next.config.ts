@@ -1,13 +1,18 @@
 import type { NextConfig } from "next";
 
-const repo = "credex";
-const assetPrefix = `/${repo}/`;
-const basePath = `/${repo}`;
+const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
+const repo = process.env.GITHUB_REPOSITORY?.split("/")[1] ?? "credex";
+const basePath = isGitHubActions ? `/${repo}` : "";
+const assetPrefix = isGitHubActions ? `/${repo}/` : undefined;
 
 const nextConfig: NextConfig = {
   output: "export",
-  assetPrefix: assetPrefix,
-  basePath: basePath,
+  basePath,
+  assetPrefix,
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;

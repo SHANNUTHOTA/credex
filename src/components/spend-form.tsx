@@ -45,25 +45,40 @@ const leadFormSchema = z.object({
 
 const API_TOOLS = ["anthropic-api", "openai-api", "gemini-api"];
 
+type SpendFormInput = z.input<typeof formSchema>;
+type SpendFormValues = z.output<typeof formSchema>;
+type LeadFormInput = z.input<typeof leadFormSchema>;
+type LeadFormValues = z.output<typeof leadFormSchema>;
+
 export function SpendForm() {
   const [selectedTool, setSelectedTool] = useState<string>("");
   const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
   const [auditId, setAuditId] = useState<string | null>(null);
   const [shareableUrl, setShareableUrl] = useState<string | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<SpendFormInput, unknown, SpendFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       tool: "",
       monthlySpend: 0,
+      seats: undefined,
+      inputTokens: undefined,
+      outputTokens: undefined,
     },
   });
 
-  const leadForm = useForm<z.infer<typeof leadFormSchema>>({
+  const leadForm = useForm<LeadFormInput, unknown, LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
+    defaultValues: {
+      email: "",
+      companyName: undefined,
+      role: undefined,
+      teamSize: undefined,
+      honeypot: undefined,
+    },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: SpendFormValues) {
     const result = runAudit(
       values.tool,
       values.monthlySpend,
@@ -91,7 +106,7 @@ export function SpendForm() {
     }
   }
 
-  async function onLeadSubmit(values: z.infer<typeof leadFormSchema>) {
+  async function onLeadSubmit(values: LeadFormValues) {
     if (!auditId) return;
 
     // Honeypot check
@@ -192,7 +207,15 @@ export function SpendForm() {
                   <FormItem>
                     <FormLabel>Monthly Spend ($)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g. 100" {...field} />
+                      <Input
+                        type="number"
+                        placeholder="e.g. 100"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={typeof field.value === "number" ? field.value : ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -207,7 +230,15 @@ export function SpendForm() {
                       <FormItem>
                         <FormLabel>Monthly Input Tokens (in millions)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 100" {...field} />
+                          <Input
+                            type="number"
+                            placeholder="e.g. 100"
+                            name={field.name}
+                            ref={field.ref}
+                            onBlur={field.onBlur}
+                            value={typeof field.value === "number" ? field.value : ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -220,7 +251,15 @@ export function SpendForm() {
                       <FormItem>
                         <FormLabel>Monthly Output Tokens (in millions)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 100" {...field} />
+                          <Input
+                            type="number"
+                            placeholder="e.g. 100"
+                            name={field.name}
+                            ref={field.ref}
+                            onBlur={field.onBlur}
+                            value={typeof field.value === "number" ? field.value : ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -235,7 +274,15 @@ export function SpendForm() {
                     <FormItem>
                       <FormLabel>Number of Seats</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="e.g. 5" {...field} />
+                        <Input
+                          type="number"
+                          placeholder="e.g. 5"
+                          name={field.name}
+                          ref={field.ref}
+                          onBlur={field.onBlur}
+                          value={typeof field.value === "number" ? field.value : ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -331,7 +378,15 @@ export function SpendForm() {
                         <FormItem>
                           <FormLabel>Team Size (Optional)</FormLabel>
                           <FormControl>
-                            <Input type="number" placeholder="e.g. 10" {...field} />
+                            <Input
+                              type="number"
+                              placeholder="e.g. 10"
+                              name={field.name}
+                              ref={field.ref}
+                              onBlur={field.onBlur}
+                              value={typeof field.value === "number" ? field.value : ""}
+                              onChange={(e) => field.onChange(e.target.value)}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

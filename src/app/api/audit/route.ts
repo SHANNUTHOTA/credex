@@ -3,6 +3,10 @@ import { supabase } from '@/lib/supabase';
 import { AuditResult } from '@/lib/audit';
 
 export async function POST(request: Request) {
+  if (!supabase) {
+    return NextResponse.json({ error: 'Backend is not configured' }, { status: 503 });
+  }
+
   const auditData: AuditResult = await request.json();
 
   const { data, error } = await supabase.from('audit_results').insert([
