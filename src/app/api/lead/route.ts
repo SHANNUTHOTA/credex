@@ -11,9 +11,9 @@ export async function POST(request: Request) {
   const { error } = await supabase.from('leads').insert([
     {
       email: leadData.email,
-      company_name: leadData.companyName,
-      role: leadData.role,
-      team_size: leadData.teamSize,
+      company_name: leadData.companyName || null,
+      role: leadData.role || null,
+      team_size: leadData.teamSize || null,
       audit_result_id: leadData.auditResultId,
     },
   ]);

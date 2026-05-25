@@ -125,10 +125,10 @@ export function SpendForm() {
     resolver: zodResolver(leadFormSchema),
     defaultValues: {
       email: "",
-      companyName: undefined,
-      role: undefined,
+      companyName: "",
+      role: "",
       teamSize: undefined,
-      honeypot: undefined,
+      honeypot: "",
     },
   });
 
@@ -258,12 +258,12 @@ export function SpendForm() {
       const client = mod.supabase;
       if (!client) return false;
 
-      const { error } = await client.from("leads").insert([
+       const { error } = await client.from("leads").insert([
         {
           email: payload.email,
-          company_name: payload.companyName,
-          role: payload.role,
-          team_size: payload.teamSize,
+          company_name: payload.companyName || null,
+          role: payload.role || null,
+          team_size: payload.teamSize || null,
           audit_result_id: payload.auditResultId,
         },
       ]);
