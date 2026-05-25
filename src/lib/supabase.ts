@@ -8,6 +8,9 @@ const isValidUrl = (value: string | undefined) => {
 };
 
 export const supabase =
-  isValidUrl(supabaseUrl) && typeof supabaseAnonKey === "string"
+  isValidUrl(supabaseUrl) &&
+  typeof supabaseAnonKey === "string" &&
+  supabaseAnonKey !== "YOUR_SUPABASE_ANON_KEY" &&
+  !supabaseAnonKey.startsWith("YOUR_")
     ? createClient(supabaseUrl as string, supabaseAnonKey)
     : null;

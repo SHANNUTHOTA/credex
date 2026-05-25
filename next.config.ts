@@ -6,7 +6,7 @@ const basePath = isGitHubActions ? `/${repo}` : "";
 const assetPrefix = isGitHubActions ? `/${repo}/` : undefined;
 
 const nextConfig: NextConfig = {
-  output: "export",
+  output: isGitHubActions ? "export" : undefined,
   basePath,
   assetPrefix,
   trailingSlash: true,

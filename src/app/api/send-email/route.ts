@@ -5,7 +5,7 @@ export async function POST(request: Request) {
   const { to, subject, html } = await request.json();
   const apiKey = process.env.RESEND_API_KEY;
 
-  if (!apiKey) {
+  if (!apiKey || apiKey === 'YOUR_RESEND_API_KEY' || apiKey.startsWith('YOUR_')) {
     return NextResponse.json(
       { error: 'Email service is not configured on this deployment.' },
       { status: 503 }

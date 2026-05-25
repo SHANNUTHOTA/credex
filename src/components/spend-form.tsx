@@ -21,17 +21,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useState } from "react";
 import { runAudit, AuditResult } from "@/lib/audit";
-import Link from "next/link";
+import { Copy, Check, Sparkles, AlertCircle } from "lucide-react";
 
-const formSchema = z.object({
-  tool: z.string(),
-  monthlySpend: z.coerce.number(),
+const baseFormSchema = z.object({
+  tool: z.string().min(1, { message: "Please select a tool" }),
+  monthlySpend: z.coerce.number().min(0.01, { message: "Monthly spend must be greater than 0" }),
   seats: z.coerce.number().optional(),
   inputTokens: z.coerce.number().optional(),
   outputTokens: z.coerce.number().optional(),
+});
+
+const formSchema = baseFormSchema.superRefine((data, ctx) => {
+  const API_TOOLS = ["anthropic-api", "openai-api", "gemini-api"];
+  if (API_TOOLS.includes(data.tool)) {
+    if (data.inputTokens === undefined || isNaN(data.inputTokens) || data.inputTokens < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Input tokens must be at least 0",
+        path: ["inputTokens"],
+      });
+    }
+    if (data.outputTokens === undefined || isNaN(data.outputTokens) || data.outputTokens < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Output tokens must be at least 0",
+        path: ["outputTokens"],
+      });
+    }
+  } else {
+    if (data.seats === undefined || isNaN(data.seats) || data.seats < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Number of seats must be at least 1",
+        path: ["seats"],
+      });
+    }
+  }
 });
 
 const leadFormSchema = z.object({
@@ -44,8 +72,8 @@ const leadFormSchema = z.object({
 
 const API_TOOLS = ["anthropic-api", "openai-api", "gemini-api"];
 
-type SpendFormInput = z.input<typeof formSchema>;
-type SpendFormValues = z.output<typeof formSchema>;
+type SpendFormInput = z.input<typeof baseFormSchema>;
+type SpendFormValues = z.output<typeof baseFormSchema>;
 type LeadFormInput = z.input<typeof leadFormSchema>;
 type LeadFormValues = z.output<typeof leadFormSchema>;
 
@@ -54,12 +82,39 @@ export function SpendForm() {
   const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
   const [auditId, setAuditId] = useState<string | null>(null);
   const [shareableUrl, setShareableUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (shareableUrl) {
+      await navigator.clipboard.writeText(shareableUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleExportJson = () => {
+    if (!auditResult) return;
+    try {
+      const blob = new Blob([JSON.stringify(auditResult, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ai-spend-audit-${auditResult.tool.toLowerCase()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Unable to export the audit report.");
+    }
+  };
 
   const form = useForm<SpendFormInput, unknown, SpendFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       tool: "",
-      monthlySpend: 0,
+      monthlySpend: undefined,
       seats: undefined,
       inputTokens: undefined,
       outputTokens: undefined,
@@ -86,8 +141,10 @@ export function SpendForm() {
       values.outputTokens
     );
     setAuditResult(result);
+    setAuditId(null);
+    setShareableUrl(null);
 
-    // Save audit result: try local API first, then fall back to client-side Supabase, then local download
+    // Save audit result: try local API first, then fall back to client-side Supabase
     try {
       const response = await fetch("/api/audit", {
         method: "POST",
@@ -97,9 +154,9 @@ export function SpendForm() {
         body: JSON.stringify(result),
       });
 
-      let data: any = null;
+      let data: { id?: string } | null = null;
       try {
-        data = await response.json();
+        data = await response.json() as { id?: string };
       } catch (err) {
         console.warn("/api/audit returned non-JSON response", err);
       }
@@ -121,7 +178,7 @@ export function SpendForm() {
           recommended_action: result.recommendedAction,
           savings: result.savings,
           reason: result.reason,
-        } as any;
+        };
         const { data: inserted, error } = await client.from("audit_results").insert([insert]).select().single();
         if (!error && inserted) {
           const id = inserted.id ?? (inserted[0] && inserted[0].id);
@@ -133,23 +190,6 @@ export function SpendForm() {
       }
     } catch (err) {
       console.warn("Saving audit via /api/audit failed:", err);
-    }
-
-    // Final fallback: offer the audit as a downloadable JSON file (works on static hosts)
-    try {
-      const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "audit.json";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      alert("Audit saved locally as audit.json. To store it online, deploy the backend or provide NEXT_PUBLIC_SUPABASE_* env vars.");
-    } catch (err) {
-      console.error("Final fallback failed:", err);
-      alert("Unable to save the audit result. Please try again later.");
     }
   }
 
@@ -207,127 +247,66 @@ export function SpendForm() {
   const isApiTool = API_TOOLS.includes(selectedTool);
 
   return (
-    <div className="flex flex-col gap-8">
-      <Card className="w-[600px]">
-        <CardHeader>
-          <CardTitle>AI Spend Audit</CardTitle>
+    <div className="w-full space-y-8 animate-fade-in">
+      <Card className="border border-border/50 bg-card/60 backdrop-blur-xl shadow-xl rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:border-primary/20">
+        <CardHeader className="border-b border-border/40 bg-muted/20 pb-4">
+          <CardTitle className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Audit Parameters
+          </CardTitle>
+          <CardDescription>Enter details about your subscription or API usage</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <FormField
-                control={form.control}
-                name="tool"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tool</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        setSelectedTool(value);
-                      }}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a tool" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="cursor">Cursor</SelectItem>
-                        <SelectItem value="github-copilot">GitHub Copilot</SelectItem>
-                        <SelectItem value="claude">Claude</SelectItem>
-                        <SelectItem value="chatgpt">ChatGPT</SelectItem>
-                        <SelectItem value="anthropic-api">Anthropic API</SelectItem>
-                        <SelectItem value="openai-api">OpenAI API</SelectItem>
-                        <SelectItem value="gemini-api">Gemini API</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="monthlySpend"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Monthly Spend ($)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="e.g. 100"
-                        name={field.name}
-                        ref={field.ref}
-                        onBlur={field.onBlur}
-                        value={typeof field.value === "number" ? field.value : ""}
-                        onChange={(e) => field.onChange(e.target.value)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {isApiTool ? (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="inputTokens"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Monthly Input Tokens (in millions)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="e.g. 100"
-                            name={field.name}
-                            ref={field.ref}
-                            onBlur={field.onBlur}
-                            value={typeof field.value === "number" ? field.value : ""}
-                            onChange={(e) => field.onChange(e.target.value)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="outputTokens"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Monthly Output Tokens (in millions)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="e.g. 100"
-                            name={field.name}
-                            ref={field.ref}
-                            onBlur={field.onBlur}
-                            value={typeof field.value === "number" ? field.value : ""}
-                            onChange={(e) => field.onChange(e.target.value)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              ) : (
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="seats"
+                  name="tool"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Number of Seats</FormLabel>
+                      <FormLabel className="text-sm font-semibold">Select AI Tool</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setSelectedTool(value);
+                        }}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="bg-background/80 focus:ring-primary">
+                            <SelectValue placeholder="Select a tool" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="cursor">Cursor</SelectItem>
+                          <SelectItem value="github-copilot">GitHub Copilot</SelectItem>
+                          <SelectItem value="claude">Claude</SelectItem>
+                          <SelectItem value="chatgpt">ChatGPT</SelectItem>
+                          <SelectItem value="anthropic-api">Anthropic API</SelectItem>
+                          <SelectItem value="openai-api">OpenAI API</SelectItem>
+                          <SelectItem value="gemini-api">Gemini API</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="monthlySpend"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-semibold">Monthly Spend ($)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="e.g. 5"
+                          placeholder="e.g. 120"
+                          className="bg-background/80 focus-visible:ring-primary"
                           name={field.name}
                           ref={field.ref}
                           onBlur={field.onBlur}
-                          value={typeof field.value === "number" ? field.value : ""}
+                          value={(field.value as string | number) ?? ""}
                           onChange={(e) => field.onChange(e.target.value)}
                         />
                       </FormControl>
@@ -335,128 +314,281 @@ export function SpendForm() {
                     </FormItem>
                   )}
                 />
+              </div>
+              
+              {selectedTool && (
+                <div className="pt-2 border-t border-border/40">
+                  {isApiTool ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="inputTokens"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">Input Tokens (millions / mo)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="e.g. 50"
+                                className="bg-background/80 focus-visible:ring-primary"
+                                name={field.name}
+                                ref={field.ref}
+                                onBlur={field.onBlur}
+                                value={(field.value as string | number) ?? ""}
+                                onChange={(e) => field.onChange(e.target.value)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="outputTokens"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">Output Tokens (millions / mo)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="e.g. 20"
+                                className="bg-background/80 focus-visible:ring-primary"
+                                name={field.name}
+                                ref={field.ref}
+                                onBlur={field.onBlur}
+                                value={(field.value as string | number) ?? ""}
+                                onChange={(e) => field.onChange(e.target.value)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  ) : (
+                    <div className="max-w-xs">
+                      <FormField
+                        control={form.control}
+                        name="seats"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">Number of Seats</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="e.g. 5"
+                                className="bg-background/80 focus-visible:ring-primary"
+                                name={field.name}
+                                ref={field.ref}
+                                onBlur={field.onBlur}
+                                value={(field.value as string | number) ?? ""}
+                                onChange={(e) => field.onChange(e.target.value)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+                </div>
               )}
-              <Button type="submit">Audit My Spend</Button>
+              
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2.5 rounded-lg shadow-md transition-all duration-300 transform active:scale-95 cursor-pointer">
+                Analyze My AI Costs
+              </Button>
             </form>
           </Form>
         </CardContent>
       </Card>
 
       {auditResult && (
-        <Card className="w-[600px]">
-          <CardHeader>
-            <CardTitle>Audit Result for {auditResult.tool}</CardTitle>
+        <Card className="border border-border/50 bg-card/60 backdrop-blur-xl shadow-2xl rounded-2xl overflow-hidden transition-all duration-300 hover:border-primary/20">
+          <CardHeader className="border-b border-border/40 bg-muted/20 pb-4">
+            <CardTitle className="text-xl sm:text-2xl font-bold flex items-center justify-between">
+              <span>Report Details</span>
+              <span className="text-sm px-3 py-1 rounded-full border border-border bg-background/50 font-medium capitalize text-muted-foreground">
+                {auditResult.tool}
+              </span>
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p>
-              **Current Spend:** ${auditResult.currentSpend.toFixed(2)}
-            </p>
-            <p>
-              **Recommended Action:** {auditResult.recommendedAction}
-            </p>
-            <p>
-              **Potential Savings:** ${auditResult.savings.toFixed(2)}
-            </p>
-            <p>
-              **Reason:** {auditResult.reason}
-            </p>
-
-            {shareableUrl && (
-              <div className="space-y-2">
-                <p>
-                  **Shareable URL:**{" "}
-                  <Link href={shareableUrl} className="text-blue-500 underline">
-                    {shareableUrl}
-                  </Link>
+          <CardContent className="pt-6 space-y-6">
+            {auditResult.savings > 0 ? (
+              <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 rounded-xl p-6 text-center space-y-2">
+                <div className="text-emerald-500 dark:text-emerald-400 font-bold text-xs tracking-wider uppercase">💰 High Savings Identified</div>
+                <div className="text-4xl sm:text-5xl font-black text-emerald-500 dark:text-emerald-400 tracking-tight">
+                  ${auditResult.savings.toFixed(2)}
+                  <span className="text-base font-normal text-muted-foreground">/mo</span>
+                </div>
+                <p className="text-sm text-muted-foreground font-medium max-w-sm mx-auto">
+                  We found potential optimizations that can save you up to <strong className="text-foreground">${(auditResult.savings * 12).toFixed(2)}</strong> annually.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-gradient-to-br from-primary/10 to-secondary/5 border border-primary/20 rounded-xl p-6 text-center space-y-2">
+                <div className="text-primary font-bold text-xs tracking-wider uppercase">🎉 Spending is Optimized</div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+                  Fully Efficient
+                </div>
+                <p className="text-sm text-muted-foreground font-medium max-w-sm mx-auto">
+                  Excellent job! Your current spending pattern aligns perfectly with the standard pricing models.
                 </p>
               </div>
             )}
 
-            <Card className="mt-8">
-              <CardHeader>
-                <CardTitle>Capture Your Lead</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Form {...leadForm}>
-                  <form onSubmit={leadForm.handleSubmit(onLeadSubmit)} className="space-y-4">
-                    <FormField
-                      control={leadForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="your@email.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={leadForm.control}
-                      name="companyName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Company Name (Optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your Company" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={leadForm.control}
-                      name="role"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Role (Optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your Role" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={leadForm.control}
-                      name="teamSize"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Team Size (Optional)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="e.g. 10"
-                              name={field.name}
-                              ref={field.ref}
-                              onBlur={field.onBlur}
-                              value={typeof field.value === "number" ? field.value : ""}
-                              onChange={(e) => field.onChange(e.target.value)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={leadForm.control}
-                      name="honeypot"
-                      render={({ field }) => (
-                        <FormItem className="sr-only"> {/* sr-only hides the field visually */}
-                          <FormLabel>Leave this field empty</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit">Save Lead</Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border border-border/40 rounded-xl p-4 bg-muted/10">
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground font-medium block">Current Monthly Spend</span>
+                <span className="text-lg font-bold">${auditResult.currentSpend.toFixed(2)}</span>
+              </div>
+              <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-border/40 pt-2 sm:pt-0 sm:pl-4">
+                <span className="text-xs text-muted-foreground font-medium block">Recommended Action</span>
+                <span className={`text-lg font-bold ${auditResult.savings > 0 ? "text-emerald-500 dark:text-emerald-400" : "text-primary"}`}>
+                  {auditResult.recommendedAction}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2 border-t border-border/40 pt-4">
+              <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                <AlertCircle className="h-4 w-4 text-primary" />
+                Audit Reason & Analysis
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{auditResult.reason}</p>
+            </div>
+
+            {shareableUrl ? (
+              <div className="space-y-2 border-t border-border/40 pt-4">
+                <span className="text-xs text-muted-foreground font-semibold block">Share This Audit</span>
+                <div className="flex items-center gap-2 bg-background/80 border border-border/60 rounded-lg p-2.5">
+                  <span className="text-xs text-muted-foreground truncate flex-1 font-mono">{shareableUrl}</span>
+                  <Button
+                    onClick={handleCopy}
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                  >
+                    {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 border-t border-border/40 pt-4">
+                <div className="flex items-center gap-2 text-xs text-amber-500 font-semibold">
+                  <AlertCircle className="h-4 w-4" />
+                  Running in offline mode (online link sharing is unavailable)
+                </div>
+                <Button
+                  onClick={handleExportJson}
+                  variant="outline"
+                  size="sm"
+                  className="w-full flex items-center justify-center gap-2 border-border/60 hover:bg-muted/50 cursor-pointer"
+                >
+                  Download Report as JSON
+                </Button>
+              </div>
+            )}
+
+            {auditResult.savings > 0 && (
+              <Card className="border border-primary/20 bg-primary/5 rounded-2xl overflow-hidden mt-6">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <Sparkles className="h-4 w-5 text-primary" />
+                    Unlock Team Savings
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Provide your contact info to get personalized implementation support for these savings.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...leadForm}>
+                    <form onSubmit={leadForm.handleSubmit(onLeadSubmit)} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={leadForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-semibold">Business Email</FormLabel>
+                              <FormControl>
+                                <Input type="email" placeholder="you@company.com" className="bg-background/80 h-9 text-sm" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={leadForm.control}
+                          name="companyName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-semibold">Company Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Your Company" className="bg-background/80 h-9 text-sm" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={leadForm.control}
+                          name="role"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-semibold">Job Title</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. CTO / Tech Lead" className="bg-background/80 h-9 text-sm" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={leadForm.control}
+                          name="teamSize"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-semibold">Team Size</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  placeholder="e.g. 15"
+                                  className="bg-background/80 h-9 text-sm"
+                                  name={field.name}
+                                  ref={field.ref}
+                                  onBlur={field.onBlur}
+                                  value={(field.value as string | number) ?? ""}
+                                  onChange={(e) => field.onChange(e.target.value)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <FormField
+                        control={leadForm.control}
+                        name="honeypot"
+                        render={({ field }) => (
+                          <FormItem className="sr-only">
+                            <FormLabel>Leave this field empty</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 rounded-lg text-sm shadow cursor-pointer transition-all duration-300 active:scale-95">
+                        Capture Savings
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            )}
           </CardContent>
         </Card>
       )}
