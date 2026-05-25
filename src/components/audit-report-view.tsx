@@ -128,7 +128,7 @@ export function AuditReportView({ auditId, onBack }: AuditReportViewProps) {
 
     const payload = { ...values, auditResultId: data.id };
 
-    const saveLeadWithSupabaseFallback = async () => {
+    const saveLeadWithSupabase = async () => {
       const mod = await import("@/lib/supabase");
       const client = mod.supabase;
       if (!client) return false;
@@ -150,25 +150,30 @@ export function AuditReportView({ auditId, onBack }: AuditReportViewProps) {
       return true;
     };
 
+    const isGitHubPages = window.location.hostname.includes("github.io");
     let leadSaved = false;
 
-    try {
-      const response = await fetch("/api/lead", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+    if (isGitHubPages) {
+      leadSaved = await saveLeadWithSupabase();
+    } else {
+      try {
+        const response = await fetch("/api/lead", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
 
-      if (response.ok) {
-        leadSaved = true;
-      } else {
-        leadSaved = await saveLeadWithSupabaseFallback();
+        if (response.ok) {
+          leadSaved = true;
+        } else {
+          leadSaved = await saveLeadWithSupabase();
+        }
+      } catch (err) {
+        console.warn("Saving lead via /api/lead failed:", err);
+        leadSaved = await saveLeadWithSupabase();
       }
-    } catch (err) {
-      console.warn("Saving lead via /api/lead failed:", err);
-      leadSaved = await saveLeadWithSupabaseFallback();
     }
 
     if (!leadSaved) {
@@ -179,30 +184,32 @@ export function AuditReportView({ auditId, onBack }: AuditReportViewProps) {
     alert("Lead saved successfully!");
     leadForm.reset();
 
-    // Send transactional email when the deployment supports it.
-    await fetch("/api/send-email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        to: values.email,
-        subject: "Your AI Spend Audit Report",
-        html: `
-          <h1>Your AI Spend Audit Report</h1>
-          <p>Thank you for using our AI Spend Audit tool. Here is your report:</p>
-          <p>Tool: ${data.tool}</p>
-          <p>Current Spend: $${data.current_spend.toFixed(2)}</p>
-          <p>Recommended Action: ${data.recommended_action}</p>
-          <p>Potential Savings: $${data.savings.toFixed(2)}</p>
-          <p>Reason: ${data.reason}</p>
-          <p>View your full report here: <a href="${shareableUrl}">${shareableUrl}</a></p>
-          <p>Credex will reach out for high-savings cases.</p>
-        `,
-      }),
-    }).catch((err) => {
-      console.warn("Transactional email request failed:", err);
-    });
+    if (!isGitHubPages) {
+      // Send transactional email when not on GitHub Pages (since it requires backend API endpoints)
+      await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: values.email,
+          subject: "Your AI Spend Audit Report",
+          html: `
+            <h1>Your AI Spend Audit Report</h1>
+            <p>Thank you for using our AI Spend Audit tool. Here is your report:</p>
+            <p>Tool: ${data.tool}</p>
+            <p>Current Spend: $${data.current_spend.toFixed(2)}</p>
+            <p>Recommended Action: ${data.recommended_action}</p>
+            <p>Potential Savings: $${data.savings.toFixed(2)}</p>
+            <p>Reason: ${data.reason}</p>
+            <p>View your full report here: <a href="${shareableUrl}">${shareableUrl}</a></p>
+            <p>Credex will reach out for high-savings cases.</p>
+          `,
+        }),
+      }).catch((err) => {
+        console.warn("Transactional email request failed:", err);
+      });
+    }
   }
 
   if (loading) {

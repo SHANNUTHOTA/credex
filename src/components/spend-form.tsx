@@ -170,38 +170,10 @@ export function SpendForm() {
     setAuditId(null);
     setShareableUrl(null);
 
-    // Save audit result: try local API first, then fall back to client-side Supabase
-    try {
-      const response = await fetch("/api/audit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(result),
-      });
+    const basePath = window.location.pathname.replace(/\/$/, "");
+    const isGitHubPages = window.location.hostname.includes("github.io");
 
-      let data: { id?: string } | null = null;
-      try {
-        data = await response.json() as { id?: string };
-      } catch (err) {
-        console.warn("/api/audit returned non-JSON response", err);
-      }
-
-      const basePath = window.location.pathname.replace(/\/$/, "");
-      const isGitHubPages = window.location.hostname.includes("github.io");
-
-      if (response.ok && data && data.id) {
-        setAuditId(data.id);
-        if (isGitHubPages) {
-          setShareableUrl(`${window.location.origin}${basePath}/?audit=${data.id}`);
-        } else {
-          setShareableUrl(`${window.location.origin}/audit/${data.id}`);
-        }
-        return;
-      }
-
-      // If the API route is not available (e.g. static host returns 405) or returned invalid JSON,
-      // attempt to save directly using client-side Supabase (requires NEXT_PUBLIC_* env vars).
+    const saveAuditWithSupabase = async () => {
       const mod = await import("@/lib/supabase");
       const client = mod.supabase;
       if (client) {
@@ -221,12 +193,43 @@ export function SpendForm() {
           } else {
             setShareableUrl(`${window.location.origin}/audit/${id}`);
           }
-          return;
+          return true;
         }
         console.error("Supabase insert failed:", error);
       }
-    } catch (err) {
-      console.warn("Saving audit via /api/audit failed:", err);
+      return false;
+    };
+
+    if (isGitHubPages) {
+      await saveAuditWithSupabase();
+    } else {
+      try {
+        const response = await fetch("/api/audit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(result),
+        });
+
+        let data: { id?: string } | null = null;
+        try {
+          data = await response.json() as { id?: string };
+        } catch (err) {
+          console.warn("/api/audit returned non-JSON response", err);
+        }
+
+        if (response.ok && data && data.id) {
+          setAuditId(data.id);
+          setShareableUrl(`${window.location.origin}/audit/${data.id}`);
+          return;
+        }
+
+        await saveAuditWithSupabase();
+      } catch (err) {
+        console.warn("Saving audit via /api/audit failed:", err);
+        await saveAuditWithSupabase();
+      }
     }
   }
 
@@ -242,7 +245,7 @@ export function SpendForm() {
 
     const payload = { ...values, auditResultId: auditId };
 
-    const saveLeadWithSupabaseFallback = async () => {
+    const saveLeadWithSupabase = async () => {
       const mod = await import("@/lib/supabase");
       const client = mod.supabase;
       if (!client) return false;
@@ -261,29 +264,33 @@ export function SpendForm() {
         console.error("Supabase lead insert failed:", error);
         return false;
       }
-
       return true;
     };
 
+    const isGitHubPages = window.location.hostname.includes("github.io");
     let leadSaved = false;
 
-    try {
-      const response = await fetch("/api/lead", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+    if (isGitHubPages) {
+      leadSaved = await saveLeadWithSupabase();
+    } else {
+      try {
+        const response = await fetch("/api/lead", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
 
-      if (response.ok) {
-        leadSaved = true;
-      } else {
-        leadSaved = await saveLeadWithSupabaseFallback();
+        if (response.ok) {
+          leadSaved = true;
+        } else {
+          leadSaved = await saveLeadWithSupabase();
+        }
+      } catch (err) {
+        console.warn("Saving lead via /api/lead failed:", err);
+        leadSaved = await saveLeadWithSupabase();
       }
-    } catch (err) {
-      console.warn("Saving lead via /api/lead failed:", err);
-      leadSaved = await saveLeadWithSupabaseFallback();
     }
 
     if (!leadSaved) {
@@ -294,30 +301,32 @@ export function SpendForm() {
     alert("Lead saved successfully!");
     leadForm.reset();
 
-    // Send transactional email when the deployment supports it.
-    await fetch("/api/send-email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        to: values.email,
-        subject: "Your AI Spend Audit Report",
-        html: `
-          <h1>Your AI Spend Audit Report</h1>
-          <p>Thank you for using our AI Spend Audit tool. Here is your report:</p>
-          <p>Tool: ${auditResult?.tool}</p>
-          <p>Current Spend: ${auditResult?.currentSpend.toFixed(2)}</p>
-          <p>Recommended Action: ${auditResult?.recommendedAction}</p>
-          <p>Potential Savings: ${auditResult?.savings.toFixed(2)}</p>
-          <p>Reason: ${auditResult?.reason}</p>
-          <p>View your full report here: <a href="${shareableUrl}">${shareableUrl}</a></p>
-          <p>Credex will reach out for high-savings cases.</p>
-        `,
-      }),
-    }).catch((err) => {
-      console.warn("Transactional email request failed:", err);
-    });
+    if (!isGitHubPages) {
+      // Send transactional email when not on GitHub Pages (since it requires backend API endpoints)
+      await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: values.email,
+          subject: "Your AI Spend Audit Report",
+          html: `
+            <h1>Your AI Spend Audit Report</h1>
+            <p>Thank you for using our AI Spend Audit tool. Here is your report:</p>
+            <p>Tool: ${auditResult?.tool}</p>
+            <p>Current Spend: ${auditResult?.currentSpend.toFixed(2)}</p>
+            <p>Recommended Action: ${auditResult?.recommendedAction}</p>
+            <p>Potential Savings: ${auditResult?.savings.toFixed(2)}</p>
+            <p>Reason: ${auditResult?.reason}</p>
+            <p>View your full report here: <a href="${shareableUrl}">${shareableUrl}</a></p>
+            <p>Credex will reach out for high-savings cases.</p>
+          `,
+        }),
+      }).catch((err) => {
+        console.warn("Transactional email request failed:", err);
+      });
+    }
   }
 
   const isApiTool = API_TOOLS.includes(selectedTool);
