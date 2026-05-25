@@ -66,13 +66,21 @@ A free tool to help you audit your AI spend and identify potential savings.
     - Why: Prevents build-time failures in CI and on static export builds when secrets are absent.
     - Cost: Slightly more code complexity in API handlers.
 
-### Screenshots
+### Product Walkthrough
 
-These screenshots were captured from the current build and show the landing page, an in-progress audit, and the completed audit result.
-
-- ![Landing page](public/screenshots/screenshot-1.png)
-- ![Filled form](public/screenshots/screenshot-2.png)
-- ![Audit result](public/screenshots/screenshot-3.png)
+<div align="center">
+  <img src="public/screenshots/screenshot-1.png" width="800" alt="Landing Page" />
+  <br />
+  <p><em>1. Interactive AI Spend Auditor Landing Page (Default Dark Theme)</em></p>
+  
+  <img src="public/screenshots/screenshot-2.png" width="800" alt="Filled Form" />
+  <br />
+  <p><em>2. Conditional Form Fields for Subscription and API Spend</em></p>
+  
+  <img src="public/screenshots/screenshot-3.png" width="800" alt="Audit Result" />
+  <br />
+  <p><em>3. Premium Cost Optimization Report & Dynamic Lead Capture</em></p>
+</div>
 
 ## Deployed URL
 
