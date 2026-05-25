@@ -7,7 +7,7 @@ export default function Home() {
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
       
-      <div className="w-full max-w-2xl z-10">
+      <div className="w-full max-w-4xl z-10">
         <HomeContent />
       </div>
     </main>
