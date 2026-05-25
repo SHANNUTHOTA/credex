@@ -176,33 +176,39 @@ export function SpendForm() {
     const saveAuditWithSupabase = async () => {
       const mod = await import("@/lib/supabase");
       const client = mod.supabase;
-      if (client) {
-        const insert = {
-          tool: result.tool,
-          current_spend: result.currentSpend,
-          recommended_action: result.recommendedAction,
-          savings: result.savings,
-          reason: result.reason,
-        };
-        const { data: inserted, error } = await client.from("audit_results").insert([insert]).select().single();
-        if (!error && inserted) {
-          const id = inserted.id ?? (inserted[0] && inserted[0].id);
-          setAuditId(id);
-          if (isGitHubPages) {
-            setShareableUrl(`${window.location.origin}${basePath}/?audit=${id}`);
-          } else {
-            setShareableUrl(`${window.location.origin}/audit/${id}`);
-          }
-          return true;
-        }
-        console.error("Supabase insert failed:", error);
+      if (!client) {
+        return false;
       }
+
+      const insert = {
+        tool: result.tool,
+        current_spend: result.currentSpend,
+        recommended_action: result.recommendedAction,
+        savings: result.savings,
+        reason: result.reason,
+      };
+
+      const { data: inserted, error } = await client.from("audit_results").insert([insert]).select().single();
+      if (!error && inserted) {
+        const id = inserted.id ?? (inserted[0] && inserted[0].id);
+        setAuditId(id);
+        if (isGitHubPages) {
+          setShareableUrl(`${window.location.origin}${basePath}/?audit=${id}`);
+        } else {
+          setShareableUrl(`${window.location.origin}/audit/${id}`);
+        }
+        return true;
+      }
+
+      console.error("Supabase insert failed:", error);
       return false;
     };
 
-    if (isGitHubPages) {
-      await saveAuditWithSupabase();
-    } else {
+    if (await saveAuditWithSupabase()) {
+      return;
+    }
+
+    if (!isGitHubPages) {
       try {
         const response = await fetch("/api/audit", {
           method: "POST",
@@ -224,13 +230,15 @@ export function SpendForm() {
           setShareableUrl(`${window.location.origin}/audit/${data.id}`);
           return;
         }
-
-        await saveAuditWithSupabase();
       } catch (err) {
         console.warn("Saving audit via /api/audit failed:", err);
-        await saveAuditWithSupabase();
       }
+
+      console.warn("Audit result could not be saved. Falling back to local export only.");
+      return;
     }
+
+    console.warn("Audit result could not be saved. Supabase client unavailable on GitHub Pages.");
   }
 
   async function onLeadSubmit(values: LeadFormValues) {
@@ -268,11 +276,9 @@ export function SpendForm() {
     };
 
     const isGitHubPages = window.location.hostname.includes("github.io");
-    let leadSaved = false;
+    let leadSaved = await saveLeadWithSupabase();
 
-    if (isGitHubPages) {
-      leadSaved = await saveLeadWithSupabase();
-    } else {
+    if (!leadSaved && !isGitHubPages) {
       try {
         const response = await fetch("/api/lead", {
           method: "POST",

@@ -151,11 +151,9 @@ export function AuditReportView({ auditId, onBack }: AuditReportViewProps) {
     };
 
     const isGitHubPages = window.location.hostname.includes("github.io");
-    let leadSaved = false;
+    let leadSaved = await saveLeadWithSupabase();
 
-    if (isGitHubPages) {
-      leadSaved = await saveLeadWithSupabase();
-    } else {
+    if (!leadSaved && !isGitHubPages) {
       try {
         const response = await fetch("/api/lead", {
           method: "POST",
