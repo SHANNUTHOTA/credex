@@ -161,9 +161,16 @@ export function SpendForm() {
         console.warn("/api/audit returned non-JSON response", err);
       }
 
+      const basePath = window.location.pathname.replace(/\/$/, "");
+      const isGitHubPages = window.location.hostname.includes("github.io");
+
       if (response.ok && data && data.id) {
         setAuditId(data.id);
-        setShareableUrl(`${window.location.origin}/audit/${data.id}`);
+        if (isGitHubPages) {
+          setShareableUrl(`${window.location.origin}${basePath}/?audit=${data.id}`);
+        } else {
+          setShareableUrl(`${window.location.origin}/audit/${data.id}`);
+        }
         return;
       }
 
@@ -183,7 +190,11 @@ export function SpendForm() {
         if (!error && inserted) {
           const id = inserted.id ?? (inserted[0] && inserted[0].id);
           setAuditId(id);
-          setShareableUrl(`${window.location.origin}/audit/${id}`);
+          if (isGitHubPages) {
+            setShareableUrl(`${window.location.origin}${basePath}/?audit=${id}`);
+          } else {
+            setShareableUrl(`${window.location.origin}/audit/${id}`);
+          }
           return;
         }
         console.error("Supabase insert failed:", error);
