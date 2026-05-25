@@ -2,6 +2,9 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { ArrowLeft, AlertCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   useEffect(() => {
@@ -25,16 +28,25 @@ export default function NotFound() {
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="max-w-md text-center space-y-4">
-        <h1 className="text-3xl font-bold">Page not found</h1>
-        <p className="text-sm text-muted-foreground">
-          If you opened a deep link on GitHub Pages, the app will redirect you to the matching audit report.
-        </p>
-        <Link href="/" className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted">
-          Go back home
-        </Link>
-      </div>
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-radial from-background via-background to-secondary/30 relative overflow-hidden">
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+      
+      <Card className="w-full max-w-md border border-border/50 bg-card/60 backdrop-blur-xl shadow-2xl rounded-2xl overflow-hidden z-10">
+        <CardContent className="pt-8 text-center space-y-6">
+          <AlertCircle className="h-12 w-12 text-primary mx-auto" />
+          <div className="space-y-2">
+            <h1 className="text-3xl font-extrabold tracking-tight">404 - Page Not Found</h1>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              The page you are looking for does not exist or has been moved to another address.
+            </p>
+          </div>
+          <Button asChild className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2.5 rounded-lg shadow-md transition-all duration-300">
+            <Link href="/" className="inline-flex items-center justify-center gap-1.5 cursor-pointer">
+              <ArrowLeft className="h-4 w-4" /> Go back to home
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
     </main>
   );
 }
