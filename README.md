@@ -14,10 +14,6 @@ A free tool to help you audit your AI spend and identify potential savings.
 - **Abuse Protection:** Implemented a simple honeypot to prevent bot submissions.
 - **Open Graph Tags:** Ensures proper previews when sharing audit reports on social media.
 
-## Screenshots
-
-_Coming soon..._
-
 ## Quick Start
 
 1.  **Clone the repository:**
@@ -72,11 +68,11 @@ _Coming soon..._
 
 ### Screenshots
 
-Below are three placeholder screenshots of the app UI. Replace these with real screenshots or a 30-second recording link before final submission.
+These screenshots were captured from the current build and show the landing page, an in-progress audit, and the completed audit result.
 
-- ![Screenshot 1](/public/screenshots/screenshot-1.svg)
-- ![Screenshot 2](/public/screenshots/screenshot-2.svg)
-- ![Screenshot 3](/public/screenshots/screenshot-3.svg)
+- ![Landing page](public/screenshots/screenshot-1.png)
+- ![Filled form](public/screenshots/screenshot-2.png)
+- ![Audit result](public/screenshots/screenshot-3.png)
 
 ## Deployed URL
 
