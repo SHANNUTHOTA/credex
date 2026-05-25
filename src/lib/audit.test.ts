@@ -20,6 +20,24 @@ describe("Audit Engine", () => {
     expect(result.savings).toBe(0);
   });
 
+  it("should recommend switching to Pro plan for Windsurf if Teams plan is used by single user", () => {
+    const result = runAudit("windsurf", 40, 1);
+    expect(result.recommendedAction).toBe("Switch to the Pro plan");
+    expect(result.savings).toBe(20);
+  });
+
+  it("should recommend optimizing usage with Credex for Windsurf if spending more than Teams plan", () => {
+    const result = runAudit("windsurf", 100, 2);
+    expect(result.recommendedAction).toBe("Optimize your usage with Credex");
+    expect(result.savings).toBe(20); // 100 - (2 * 40) = 20
+  });
+
+  it("should find no savings for Windsurf if spending is optimal", () => {
+    const result = runAudit("windsurf", 20, 1);
+    expect(result.recommendedAction).toBe("No savings found");
+    expect(result.savings).toBe(0);
+  });
+
   it("should recommend switching to Individual plan for GitHub Copilot if Business plan is used by single user", () => {
     const result = runAudit("github-copilot", 19, 1);
     expect(result.recommendedAction).toBe("Switch to the Individual plan");

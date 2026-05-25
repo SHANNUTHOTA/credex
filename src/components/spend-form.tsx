@@ -330,6 +330,7 @@ export function SpendForm() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="cursor">Cursor</SelectItem>
+                          <SelectItem value="windsurf">Windsurf</SelectItem>
                           <SelectItem value="github-copilot">GitHub Copilot</SelectItem>
                           <SelectItem value="claude">Claude</SelectItem>
                           <SelectItem value="chatgpt">ChatGPT</SelectItem>

@@ -1,4 +1,4 @@
-## Day 1 - 2026-05-21
+## Day 1 - 2026-05-19
 
 **Hours worked:** 1
 
@@ -20,7 +20,7 @@
 - Start collecting pricing data for the AI tools.
 - Make the first commit and push to GitHub.
 
-## Day 2 - 2026-05-21
+## Day 2 - 2026-05-20
 
 **Hours worked:** 4
 

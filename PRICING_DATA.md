@@ -32,3 +32,8 @@
 - Gemini 1.5 Flash: $0.35/million input tokens, $1.05/million output tokens (for context windows > 128K tokens) – https://ai.google.dev/pricing – verified 2026-05-21
 - Gemini 1.5 Flash: $0.70/million input tokens, $2.10/million output tokens (for context windows <= 128K tokens) – https://ai.google.dev/pricing – verified 2026-05-21
 - Google One AI Premium: $19.99/month – https://one.google.com/ai-premium – verified 2026-05-21
+
+## Windsurf
+- Pro: $20/month – https://codeium.com/windsurf – verified 2026-05-25
+- Max: $200/month – https://codeium.com/windsurf – verified 2026-05-25
+- Teams: $40/user/month – https://codeium.com/windsurf – verified 2026-05-25

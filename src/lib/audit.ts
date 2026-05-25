@@ -18,6 +18,8 @@ const CLAUDE_PRO_PRICE = 20;
 const CLAUDE_TEAM_PRICE = 30;
 const CHATGPT_PLUS_PRICE = 20;
 const CHATGPT_TEAM_PRICE = 30; // Assuming monthly billing
+const WINDSURF_PRO_PRICE = 20;
+const WINDSURF_TEAMS_PRICE = 40;
 
 const ANTHROPIC_API_PRICING = {
     sonnet: {
@@ -94,6 +96,39 @@ function auditCursor(monthlySpend: number, seats: number): AuditResult {
 
   return {
     tool: "Cursor",
+    currentSpend: monthlySpend,
+    recommendedAction: "No savings found",
+    savings: 0,
+    reason: "Your spending seems optimal for your team size.",
+  };
+}
+
+function auditWindsurf(monthlySpend: number, seats: number): AuditResult {
+  if (seats === 1 && monthlySpend >= WINDSURF_TEAMS_PRICE) {
+    const savings = monthlySpend - WINDSURF_PRO_PRICE;
+    if (savings > 0) {
+      return {
+        tool: "Windsurf",
+        currentSpend: monthlySpend,
+        recommendedAction: "Switch to the Pro plan",
+        savings,
+        reason: "The Teams plan is overkill for a single user. You can get all the features you need with the Pro plan.",
+      };
+    }
+  }
+
+  if (monthlySpend > (seats * WINDSURF_TEAMS_PRICE)) {
+    return {
+      tool: "Windsurf",
+      currentSpend: monthlySpend,
+      recommendedAction: "Optimize your usage with Credex",
+      savings: monthlySpend - (seats * WINDSURF_TEAMS_PRICE),
+      reason: "You are spending more than the standard team plan. Credex can help you get a better deal on your credits.",
+    };
+  }
+
+  return {
+    tool: "Windsurf",
     currentSpend: monthlySpend,
     recommendedAction: "No savings found",
     savings: 0,
@@ -335,6 +370,8 @@ export function runAudit(
   switch (tool) {
     case "cursor":
       return auditCursor(monthlySpend, seats!);
+    case "windsurf":
+      return auditWindsurf(monthlySpend, seats!);
     case "github-copilot":
       return auditGitHubCopilot(monthlySpend, seats!);
     case "claude":
