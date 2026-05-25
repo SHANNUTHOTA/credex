@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { runAudit, AuditResult } from "@/lib/audit";
 import { Copy, Check, Sparkles, AlertCircle } from "lucide-react";
 
@@ -131,6 +131,32 @@ export function SpendForm() {
       honeypot: undefined,
     },
   });
+
+  // Load state from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ai-spend-audit-form");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.tool) {
+          form.reset(parsed);
+          setSelectedTool(parsed.tool);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to load form state from localStorage:", err);
+    }
+  }, [form]);
+
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const watchedValues = form.watch();
+  useEffect(() => {
+    try {
+      localStorage.setItem("ai-spend-audit-form", JSON.stringify(watchedValues));
+    } catch (err) {
+      console.warn("Failed to save form state to localStorage:", err);
+    }
+  }, [watchedValues]);
 
   async function onSubmit(values: SpendFormValues) {
     const result = runAudit(
