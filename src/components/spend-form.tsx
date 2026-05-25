@@ -203,45 +203,84 @@ export function SpendForm() {
       return;
     }
 
-    const response = await fetch("/api/lead", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ ...values, auditResultId: auditId }),
-    });
+    const payload = { ...values, auditResultId: auditId };
 
-    if (response.ok) {
-      alert("Lead saved successfully!");
-      leadForm.reset();
+    const saveLeadWithSupabaseFallback = async () => {
+      const mod = await import("@/lib/supabase");
+      const client = mod.supabase;
+      if (!client) return false;
 
-      // Send transactional email
-      await fetch("/api/send-email", {
+      const { error } = await client.from("leads").insert([
+        {
+          email: payload.email,
+          company_name: payload.companyName,
+          role: payload.role,
+          team_size: payload.teamSize,
+          audit_result_id: payload.auditResultId,
+        },
+      ]);
+
+      if (error) {
+        console.error("Supabase lead insert failed:", error);
+        return false;
+      }
+
+      return true;
+    };
+
+    let leadSaved = false;
+
+    try {
+      const response = await fetch("/api/lead", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          to: values.email,
-          subject: "Your AI Spend Audit Report",
-          html: `
-            <h1>Your AI Spend Audit Report</h1>
-            <p>Thank you for using our AI Spend Audit tool. Here is your report:</p>
-            <p>Tool: ${auditResult?.tool}</p>
-            <p>Current Spend: ${auditResult?.currentSpend.toFixed(2)}</p>
-            <p>Recommended Action: ${auditResult?.recommendedAction}</p>
-            <p>Potential Savings: ${auditResult?.savings.toFixed(2)}</p>
-            <p>Reason: ${auditResult?.reason}</p>
-            <p>View your full report here: <a href="${shareableUrl}">${shareableUrl}</a></p>
-            <p>Credex will reach out for high-savings cases.</p>
-          `,
-        }),
+        body: JSON.stringify(payload),
       });
-    } else {
-      const data = await response.json();
-      console.error("Failed to save lead:", data.error);
-      alert("Failed to save lead.");
+
+      if (response.ok) {
+        leadSaved = true;
+      } else {
+        leadSaved = await saveLeadWithSupabaseFallback();
+      }
+    } catch (err) {
+      console.warn("Saving lead via /api/lead failed:", err);
+      leadSaved = await saveLeadWithSupabaseFallback();
     }
+
+    if (!leadSaved) {
+      alert("Failed to save lead.");
+      return;
+    }
+
+    alert("Lead saved successfully!");
+    leadForm.reset();
+
+    // Send transactional email when the deployment supports it.
+    await fetch("/api/send-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        to: values.email,
+        subject: "Your AI Spend Audit Report",
+        html: `
+          <h1>Your AI Spend Audit Report</h1>
+          <p>Thank you for using our AI Spend Audit tool. Here is your report:</p>
+          <p>Tool: ${auditResult?.tool}</p>
+          <p>Current Spend: ${auditResult?.currentSpend.toFixed(2)}</p>
+          <p>Recommended Action: ${auditResult?.recommendedAction}</p>
+          <p>Potential Savings: ${auditResult?.savings.toFixed(2)}</p>
+          <p>Reason: ${auditResult?.reason}</p>
+          <p>View your full report here: <a href="${shareableUrl}">${shareableUrl}</a></p>
+          <p>Credex will reach out for high-savings cases.</p>
+        `,
+      }),
+    }).catch((err) => {
+      console.warn("Transactional email request failed:", err);
+    });
   }
 
   const isApiTool = API_TOOLS.includes(selectedTool);
