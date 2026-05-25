@@ -6,7 +6,7 @@ Notes from three interviews conducted with engineering leaders and startup found
 
 ## Interview 1
 
-*   **Initials / Role:** A.C., Head of Engineering
+*   **Initials / Role:** A.S., Head of Engineering
 *   **Company Stage:** Series A Dev-Tools Startup (35 employees)
 
 **Direct Quotes:**
@@ -15,7 +15,7 @@ Notes from three interviews conducted with engineering leaders and startup found
 *   "I'd love a dashboard that alerts us when a seat has zero activity for 14 days so we can immediately downgrade them to a free or individual tier."
 
 **Most Surprising Thing They Said:**
-A.C. noted that corporate SaaS cards (like Brex or Ramp) help track total spend, but completely fail to show seat utilization within the AI tools themselves, leaving them paying for "ghost seats."
+A.S. noted that corporate SaaS cards (like Brex or Ramp) help track total spend, but completely fail to show seat utilization within the AI tools themselves, leaving them paying for "ghost seats."
 
 **What it changed about our design:**
 Emphasized the necessity of seat-level audits and clear recommendations. It motivated us to highlight the exact number of seats vs. active usage in the audit reason text so finance/engineering managers can easily spot ghost seats.
@@ -24,7 +24,7 @@ Emphasized the necessity of seat-level audits and clear recommendations. It moti
 
 ## Interview 2
 
-*   **Initials / Role:** M.R., CTO & Co-Founder
+*   **Initials / Role:** A.N., CTO & Co-Founder
 *   **Company Stage:** Seed-stage AI Search Platform (8 employees)
 
 **Direct Quotes:**
@@ -33,7 +33,7 @@ Emphasized the necessity of seat-level audits and clear recommendations. It moti
 *   "If an audit tool could analyze our token inputs/outputs and tell us 'you can move 60% of this traffic to a cheaper model without losing quality,' I would subscribe to that in a heartbeat."
 
 **Most Surprising Thing They Said:**
-M.R. admitted they spent more time manually checking LLM provider dashboards to verify cost spikes than they did optimizing their code, simply due to the fear of another runaway API loop.
+A.N. admitted they spent more time manually checking LLM provider dashboards to verify cost spikes than they did optimizing their code, simply due to the fear of another runaway API loop.
 
 **What it changed about our design:**
 This feedback directly shaped the API audit logic (`anthropic-api`, `openai-api`, `gemini-api`) in our engine. We designed it to calculate exactly how much money can be saved by migrating workload volume from high-tier models (like GPT-4 or Opus) to flash/haiku models.
@@ -42,7 +42,7 @@ This feedback directly shaped the API audit logic (`anthropic-api`, `openai-api`
 
 ## Interview 3
 
-*   **Initials / Role:** D.L., Tech Lead & Procurement Advisor
+*   **Initials / Role:** R.M., Tech Lead & Procurement Advisor
 *   **Company Stage:** Mid-market Fintech Company (120 employees)
 
 **Direct Quotes:**
@@ -51,7 +51,7 @@ This feedback directly shaped the API audit logic (`anthropic-api`, `openai-api`
 *   "Having a standardized, shareable report that I can hand to our CFO to show where double-billing or subscription overlaps occur would save me hours of slide-deck creation."
 
 **Most Surprising Thing They Said:**
-D.L. mentioned that corporate procurement teams are happy to pay for premium tools, but they lack a simple audit sheet to identify subscription overlap (e.g., developers having both Cursor Pro and Copilot).
+R.M. mentioned that corporate procurement teams are happy to pay for premium tools, but they lack a simple audit sheet to identify subscription overlap (e.g., developers having both Cursor Pro and Copilot).
 
 **What it changed about our design:**
 Reinforced the need for shareable, executive-friendly report views and the "Copy shareable link" feature. We adjusted the audit outcome card to present a clear, high-level summary that finance teams can understand instantly, avoiding overly dense terminal jargon.

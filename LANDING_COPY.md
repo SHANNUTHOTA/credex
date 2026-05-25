@@ -15,13 +15,13 @@ Instantly uncover hidden AI costs, find cheaper alternatives, and save thousands
 ## Social Proof Block (mocked)
 
 "Before Credex's AI Spend Audit, our AI costs were a black box. Now, we're saving 20% monthly!"
-— **Alex Chen, Head of Engineering at InnovateCo** (mocked)
+— **Arjun Sen, Head of Engineering at InnovateCo** (mocked)
 
 "This tool is a game-changer. Identified $500/month in savings in minutes. Highly recommend!"
-— **Maria Rodriguez, CTO at AI-Driven Solutions** (mocked)
+— **Anjali Nair, CTO at AI-Driven Solutions** (mocked)
 
 "Credex pointed out that our developers were paying double for both individual Claude Pro seats and corporate Copilot seats. It helped us streamline our subscriptions and save $300/mo."
-— **David Lee, Tech Lead at FinTech Group** (mocked)
+— **Rahul Mehta, Tech Lead at FinTech Group** (mocked)
 
 ## FAQ (5 real Q&As)
 

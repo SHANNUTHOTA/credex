@@ -9,17 +9,17 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 const TESTIMONIALS = [
   {
     quote: "Before Credex's AI Spend Audit, our AI costs were a black box. Now, we're saving 20% monthly!",
-    author: "Alex Chen",
+    author: "Arjun Sen",
     role: "Head of Engineering at InnovateCo",
   },
   {
     quote: "This tool is a game-changer. Identified $500/month in savings in minutes. Highly recommend!",
-    author: "Maria Rodriguez",
+    author: "Anjali Nair",
     role: "CTO at AI-Driven Solutions",
   },
   {
     quote: "Credex pointed out that our developers were paying double for both individual Claude Pro seats and corporate Copilot seats. It helped us streamline our subscriptions and save $300/mo.",
-    author: "David Lee",
+    author: "Rahul Mehta",
     role: "Tech Lead at FinTech Group",
   },
 ];
